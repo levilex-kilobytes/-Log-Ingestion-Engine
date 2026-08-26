@@ -1,0 +1,8 @@
+rules:
+  - field: service
+    value: claims
+    destination: claims-queue
+
+  - field: level
+    value: ERROR
+    destination: error-queue

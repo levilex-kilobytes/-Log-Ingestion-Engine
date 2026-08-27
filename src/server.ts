@@ -1,13 +1,12 @@
+import "dotenv/config";
+
 import app from "./app";
 import { config } from "./config/env";
 import { rawLogChannel } from "./ingestor/ingestionChannel";
 import { LogConsumer } from "./queue/logConsumer";
 import { handleLogBatch } from "./queue/logConsumerHandler";
 
-const consumer = new LogConsumer(
-  rawLogChannel,
-  handleLogBatch,
-);
+const consumer = new LogConsumer(rawLogChannel, handleLogBatch);
 
 consumer.start();
 

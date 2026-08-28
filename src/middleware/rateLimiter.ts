@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { TokenBucket } from "../rateLimiter/tokenBucket";
 
-const rateLimit = Number(process.env.RATE_LIMIT ?? 1000);
+const rateLimit = Number(process.env.RATE_LIMIT);
 
 const tokenBucket = new TokenBucket({
   capacity: rateLimit,

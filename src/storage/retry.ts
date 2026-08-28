@@ -19,23 +19,21 @@ export class RetryWriter {
         this.store.insert(log);
         return;
       } catch (error) {
-        lastError = error instanceof Error
-          ? error
-          : new Error(String(error));
+        lastError = error instanceof Error ? error : new Error(String(error));
 
         if (attempt === this.backoffMs.length) {
           break;
         }
 
-        console.warn(
-          `SQLite write failed. Retry ${attempt + 1} in ${this.backoffMs[attempt]}ms`,
-        );
+        const delay = this.backoffMs[attempt];
 
-        await this.delay(this.backoffMs[attempt]);
+        console.warn(`SQLite write failed. Retry ${attempt + 1} in ${delay}ms`);
+
+        await this.delay(delay);
       }
     }
 
-    this.deadLetter.write(
+    await this.deadLetter.write(
       log,
       lastError?.message ?? "Unknown SQLite write error",
     );

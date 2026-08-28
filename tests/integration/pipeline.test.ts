@@ -50,6 +50,6 @@ describe("Log processing pipeline", () => {
     expect(processedLog?.received_at).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/,
     );
-    expect(destination).toBe("claims-queue");
+    expect(destination).toBe("queue_service1");
   });
 });

@@ -1,22 +1,25 @@
 import "dotenv/config";
 
 export const config = {
-  port: Number(process.env.PORT ?? 3000),
+  port: Number(process.env.PORT),
 
-  environment: process.env.ENVIRONMENT ?? "production",
+  environment: process.env.ENVIRONMENT,
 
-  rateLimit: Number(process.env.RATE_LIMIT ?? 1000),
+  rateLimit: Number(process.env.RATE_LIMIT),
 
-  rawLogBufferSize: Number(process.env.RAW_LOG_BUFFER_SIZE ?? 10000),
+  rawLogBufferSize: Number(process.env.RAW_LOG_BUFFER_SIZE),
 
-  rawLogBatchSize: Number(process.env.RAW_LOG_BATCH_SIZE ?? 50),
+  rawLogBatchSize: Number(process.env.RAW_LOG_BATCH_SIZE),
 
-  rawLogTimeoutMs: Number(process.env.RAW_LOG_TIMEOUT_MS ?? 100),
+  rawLogTimeoutMs: Number(process.env.RAW_LOG_TIMEOUT_MS),
 
   rabbitmq: {
-    host: process.env.RABBITMQ_HOST ?? "localhost",
-    port: Number(process.env.RABBITMQ_PORT ?? 5672),
-    user: process.env.RABBITMQ_USER ?? "guest",
-    password: process.env.RABBITMQ_PASS ?? "guest",
+    host: process.env.RABBITMQ_HOST,
+
+    port: Number(process.env.RABBITMQ_PORT),
+
+    user: process.env.RABBITMQ_USER,
+
+    password: process.env.RABBITMQ_PASS,
   },
 };

@@ -1,21 +1,24 @@
 import type { Request, Response } from "express";
 import { randomUUID } from "node:crypto";
+
 import { validateLog } from "../validation/logValidator";
-import type { LogEntry } from "../types/log";
+import type { LogEntry, EnrichedLog } from "../types/log";
+
+import { enrichLog } from "../enrichment/logEnricher";
+import { metrics } from "../monitoring/metrics";
+
 import { rawLogChannel } from "./ingestionChannel";
 import type { RawLogChannel } from "../queue/rawLogChannel";
 
 export function createIngestLogs(channel: RawLogChannel) {
-  return async function ingestLogs(
-    req: Request,
-    res: Response,
-  ): Promise<void> {
+  return async function ingestLogs(req: Request, res: Response): Promise<void> {
     const logs = req.body;
 
     if (!Array.isArray(logs)) {
       res.status(400).json({
         error: "Request body must be an array of log entries",
       });
+
       return;
     }
 
@@ -37,20 +40,31 @@ export function createIngestLogs(channel: RawLogChannel) {
           index,
           details: result.errors,
         });
+
         continue;
       }
 
-      const pushed = await channel.push(log as LogEntry);
+      const enrichedLog: EnrichedLog = enrichLog(log as LogEntry, req);
+
+      const pushed = await channel.push(enrichedLog);
 
       if (!pushed) {
+        metrics.setQueueBacklog(channel.size());
+
         res.status(503).json({
           error: "ingestion overloaded",
         });
+
         return;
       }
 
+      metrics.record(enrichedLog);
+      metrics.setQueueBacklog(channel.size());
+
       accepted++;
     }
+
+    metrics.setQueueBacklog(channel.size());
 
     const batchId = randomUUID();
 

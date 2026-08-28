@@ -1,4 +1,5 @@
 import express from "express";
+
 import routes from "./routes/routes";
 import { contentTypeMiddleware } from "./middleware/contentType";
 import { errorHandler } from "./middleware/errorHandler";

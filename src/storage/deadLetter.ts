@@ -1,9 +1,10 @@
-import fs from "node:fs";
+import "dotenv/config";
+import fs from "node:fs/promises";
 import path from "node:path";
 import type { EnrichedLog } from "../types/log";
 
-const DEFAULT_FILE = "logs-failed.json";
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const DEFAULT_FILE = process.env.DEAD_LETTER_FILE!;
+const MAX_FILE_SIZE = Number(process.env.DEAD_LETTER_MAX_SIZE!);
 
 interface DeadLetterEntry {
   log: EnrichedLog;
@@ -14,36 +15,60 @@ interface DeadLetterEntry {
 export class DeadLetterWriter {
   constructor(private readonly filePath: string = path.resolve(DEFAULT_FILE)) {}
 
-  write(log: EnrichedLog, error: string): void {
+  async write(log: EnrichedLog, error: string): Promise<void> {
     const entry: DeadLetterEntry = {
       log,
       error,
       timestamp: new Date().toISOString(),
     };
 
-    this.rotateIfNeeded();
+    await this.rotateIfNeeded();
 
     let entries: DeadLetterEntry[] = [];
 
-    if (fs.existsSync(this.filePath)) {
-      const content = fs.readFileSync(this.filePath, "utf-8");
+    try {
+      const content = await fs.readFile(this.filePath, "utf-8");
 
       if (content.trim()) {
-        entries = JSON.parse(content);
+        entries = JSON.parse(content) as DeadLetterEntry[];
+      }
+    } catch (readError: unknown) {
+      const errorCode =
+        readError && typeof readError === "object" && "code" in readError
+          ? readError.code
+          : undefined;
+
+      if (errorCode !== "ENOENT") {
+        throw readError;
       }
     }
 
     entries.push(entry);
 
-    fs.writeFileSync(this.filePath, JSON.stringify(entries, null, 2), "utf-8");
+    await fs.writeFile(
+      this.filePath,
+      JSON.stringify(entries, null, 2),
+      "utf-8",
+    );
   }
 
-  private rotateIfNeeded(): void {
-    if (!fs.existsSync(this.filePath)) {
-      return;
-    }
+  private async rotateIfNeeded(): Promise<void> {
+    let stats;
 
-    const stats = fs.statSync(this.filePath);
+    try {
+      stats = await fs.stat(this.filePath);
+    } catch (error: unknown) {
+      const errorCode =
+        error && typeof error === "object" && "code" in error
+          ? error.code
+          : undefined;
+
+      if (errorCode === "ENOENT") {
+        return;
+      }
+
+      throw error;
+    }
 
     if (stats.size <= MAX_FILE_SIZE) {
       return;
@@ -54,13 +79,20 @@ export class DeadLetterWriter {
     const name = path.basename(this.filePath, extension);
 
     let counter = 1;
+
     let rotatedPath = path.join(directory, `${name}-${counter}${extension}`);
 
-    while (fs.existsSync(rotatedPath)) {
-      counter++;
-      rotatedPath = path.join(directory, `${name}-${counter}${extension}`);
+    while (true) {
+      try {
+        await fs.access(rotatedPath);
+        counter++;
+
+        rotatedPath = path.join(directory, `${name}-${counter}${extension}`);
+      } catch {
+        break;
+      }
     }
 
-    fs.renameSync(this.filePath, rotatedPath);
+    await fs.rename(this.filePath, rotatedPath);
   }
 }

@@ -16,6 +16,22 @@ export function enrichLog(
     sourceIp = req.socket.remoteAddress;
   }
 
+  return createEnrichedLog(log, sourceIp, env);
+}
+
+export function enrichLogEntry(
+  log: LogEntry,
+  sourceIp: string = "unknown",
+  env: string = process.env.NODE_ENV ?? "production",
+): EnrichedLog {
+  return createEnrichedLog(log, sourceIp, env);
+}
+
+function createEnrichedLog(
+  log: LogEntry,
+  sourceIp: string,
+  env: string,
+): EnrichedLog {
   return {
     ...log,
     received_at: getMicrosecondTimestamp(),
@@ -26,9 +42,7 @@ export function enrichLog(
 
 function getMicrosecondTimestamp(): string {
   const now = new Date();
-
   const iso = now.toISOString();
-
   const milliseconds = iso.slice(20, 23);
 
   return `${iso.slice(0, 20)}${milliseconds}000Z`;

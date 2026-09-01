@@ -18,7 +18,7 @@ describe("DeadLetterWriter", () => {
     }
   });
 
-  it("writes a failed log to the dead letter file", () => {
+  it("writes a failed log to the dead letter file", async () => {
     const writer = new DeadLetterWriter(testFile);
 
     const log = {
@@ -31,7 +31,7 @@ describe("DeadLetterWriter", () => {
       env: "production",
     };
 
-    writer.write(log, "SQLite write failed");
+    await writer.write(log, "SQLite write failed");
 
     const content = JSON.parse(fs.readFileSync(testFile, "utf-8"));
 

@@ -31,10 +31,7 @@ describe("RabbitMQPublisher", () => {
     const fallback = new FallbackQueue();
     const publisher = new RabbitMQPublisher(fallback);
 
-    const result = await publisher.publish(
-      "service1",
-      log,
-    );
+    const result = await publisher.publish("service1", log);
 
     expect(result).toBe(false);
   });

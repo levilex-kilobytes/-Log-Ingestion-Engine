@@ -3,11 +3,7 @@ import amqp, { type Channel, type ChannelModel } from "amqplib";
 import type { EnrichedLog } from "../types/log";
 import { FallbackQueue } from "./fallbackQueue";
 
-const DESTINATIONS = [
-  "queue_service1",
-  "queue_service2",
-  "queue_service3",
-] as const;
+const DESTINATIONS = ["service1", "service2", "service3"] as const;
 
 const ROUTING_KEY = "log.write";
 const PUBLISH_TIMEOUT_MS = 5_000;
@@ -44,15 +40,17 @@ export class RabbitMQPublisher {
       for (const destination of DESTINATIONS) {
         const exchange = this.getExchange(destination);
 
+        const queue = `queue_${destination}`;
+
         await this.channel.assertExchange(exchange, "direct", {
           durable: true,
         });
 
-        await this.channel.assertQueue(destination, {
+        await this.channel.assertQueue(queue, {
           durable: true,
         });
 
-        await this.channel.bindQueue(destination, exchange, ROUTING_KEY);
+        await this.channel.bindQueue(queue, exchange, ROUTING_KEY);
       }
 
       console.log("RabbitMQ connected");
@@ -66,10 +64,6 @@ export class RabbitMQPublisher {
 
   async publish(destination: string, log: EnrichedLog): Promise<boolean> {
     const exchange = this.getExchange(destination);
-
-    if (!exchange) {
-      throw new Error(`Unknown RabbitMQ destination: ${destination}`);
-    }
 
     if (!this.channel) {
       this.fallbackQueue.push(destination, log);
@@ -114,13 +108,13 @@ export class RabbitMQPublisher {
 
   private getExchange(destination: string): string {
     switch (destination) {
-      case "queue_service1":
+      case "service1":
         return "exchange_service1";
 
-      case "queue_service2":
+      case "service2":
         return "exchange_service2";
 
-      case "queue_service3":
+      case "service3":
         return "exchange_service3";
 
       default:
